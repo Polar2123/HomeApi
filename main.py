@@ -69,6 +69,7 @@ def message_handler():
             try:
                 payload = message_queue.get(timeout=5)
                 sensor_id,topic, message = payload.split(" ",2)
+                temperature_sensor[sensor_id] = int(message) # Message should always be a number over this channel 
                 print(f"Received message on topic \"{topic}\": {message}")
             except Exception as e:
                 pass
