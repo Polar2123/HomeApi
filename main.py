@@ -68,7 +68,7 @@ def message_handler():
         while is_working or not message_queue.empty():
             try:
                 payload = message_queue.get(timeout=5)
-                topic, message = payload.split(" ",1)
+                sensor_id,topic, message = payload.split(" ",2)
                 print(f"Received message on topic \"{topic}\": {message}")
             except Exception as e:
                 pass
