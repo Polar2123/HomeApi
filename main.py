@@ -1,6 +1,7 @@
 import socket
 import queue
 import threading
+import time
 
 def main():
     sock = socket.socket()
@@ -8,25 +9,59 @@ def main():
     with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as sock:
         while not connected:
             try:
-                connected = startConnection(sock)
+                connected = start_connection(sock)
+                
             except:
-                pass
+                print("Waiting for connection...")
+                time.sleep(1) # Wait a bit between connection attempts
+                
+        handler = message_handler()
+        threading.Thread(target=handle_connection,args=(sock,handler)).start()
+        handler.process()
 
-        handleConnection(sock)
-        
+def message_handler():
+    message_queue = queue.Queue()
+    is_working = True
 
-def handleConnection(socket):
+    def closure():
+        pass
+
+    def add(payload):
+        message_queue.put(payload)
+
+    def process_messages():
+        nonlocal is_working
+        while is_working or not message_queue.empty():
+            payload = message_queue.get()
+            print(payload)
+
+    def shutdown():
+        nonlocal is_working
+        is_working = False
+    
+
+    closure.add = add
+    closure.process = process_messages
+    closure.close = shutdown
+    return closure
+
+def handle_connection(socket,message_closure):
     try:
+        socket.send(b"SUB temperature")
+        print("Tried Subscribing to Temperature topic!")
         while True:
             data = socket.recv(1024)
             if not data: raise Exception("The Socket has been Closed!")
-             
+            decoded_data = decode(data)
+            message_closure.add(decoded_data)
+            
 
     except Exception as e:
         print(repr(e))
+        print("Lost connection!")
         print("Closing down the API!")
 
-def startConnection(socket) -> bool:
+def start_connection(socket) -> bool:
     socket.connect(("localhost",9988))
     socket.send(b"CONN api")
     byteResult = socket.recv(1024)
