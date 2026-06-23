@@ -33,7 +33,8 @@ def message_handler():
         nonlocal is_working
         while is_working or not message_queue.empty():
             payload = message_queue.get()
-            print(payload)
+            topic, message = payload.split(" ",1)
+            print(f"Received message on topic \"{topic}\": {message}")
 
     def shutdown():
         nonlocal is_working
@@ -47,8 +48,8 @@ def message_handler():
 
 def handle_connection(socket,message_closure):
     try:
-        socket.send(b"SUB temperature")
-        print("Tried Subscribing to Temperature topic!")
+        subscribe_to_topic(socket,"temperature") 
+
         while True:
             data = socket.recv(1024)
             if not data: raise Exception("The Socket has been Closed!")
@@ -61,6 +62,16 @@ def handle_connection(socket,message_closure):
         print("Lost connection!")
         print("Closing down the API!")
 
+def subscribe_to_topic(socket,topic):
+    response = ""
+    while response != "SUBACK":
+        socket.send(encode(f"SUB {topic}"))
+        data = socket.recv(1024)
+        if not data: raise Exception("Unable to Contact Socket!")
+        response = decode(data)
+    print(f"Subscribed to the topic \"{topic}\"")
+
+
 def start_connection(socket) -> bool:
     socket.connect(("localhost",9988))
     socket.send(b"CONN api")
@@ -70,6 +81,9 @@ def start_connection(socket) -> bool:
 
 def decode(byteResult):
     return byteResult.decode('utf-8')
+
+def encode(string):
+    return string.encode('utf-8')
 
 if __name__ == "__main__":
     main()
